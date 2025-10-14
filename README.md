@@ -120,7 +120,7 @@ Visualize:
 ## Project Structure
 
 ```
-nedelec2/
+cavity-resonator/
 ├── main.py                 # Main solver driver
 ├── element.py              # Element class and basis functions
 ├── mesh_info.py            # Mesh generation and management
