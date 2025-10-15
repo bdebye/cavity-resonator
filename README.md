@@ -9,6 +9,7 @@ This solver computes the eigenfrequencies and field distributions of electromagn
 ### Key Features
 
 - ✅ **Second-order Nédélec elements** (20 basis functions per tetrahedron)
+- ✅ **Analytical matrix assembly** using closed-form integration formulas
 - ✅ **Automatic mesh generation** using Gmsh for rectangular cavities
 - ✅ **Optimized matrix assembly** with vectorized operations (~50× speedup)
 - ✅ **Parallel element initialization** using multiprocessing
@@ -135,7 +136,9 @@ cavity-resonator/
 - `element_tet` class: Tetrahedral element implementation
 - Second-order Nédélec basis functions (edge and face)
 - Curl of basis functions
-- Optimized local matrix assembly
+- **Analytical matrix assembly** using closed-form integration
+- Precomputed integration matrices (N_ijk, P_ijkl)
+- Gradient dot products (φ_ij) for mass matrix
 - Field interpolation functions
 
 #### `mesh_info.py`
@@ -143,6 +146,11 @@ cavity-resonator/
 - `mesh_info` class: Global mesh data structure
 - Edge and face DOF mapping
 - PEC boundary condition handling
+
+#### `post_proc.py`
+- `gmsh_post` class: Utilities for writing `.pos` field files for visualization in Gmsh
+- Supports exporting scalar and vector field data (electric/magnetic fields) at arbitrary points
+- Manages Gmsh view sections, output formatting, and automatic file closure
 
 #### `main.py`
 - `resonator` class: Global assembly and solver
@@ -155,17 +163,26 @@ cavity-resonator/
 
 ### Optimization Highlights
 
-The solver uses **highly optimized matrix assembly**:
+The solver uses **analytical matrix assembly** with closed-form integration:
 
-- **Vectorized operations**: Einstein summation for tensor contractions
-- **Pre-computation**: Basis functions evaluated once at quadrature points
-- **Reduced overhead**: Eliminated 800 function calls per element
-- **Speedup**: ~50× faster than naive nested-loop implementation
+- **Analytical integration**: Direct evaluation using closed-form formulas for tetrahedra
+- **Precomputed matrices**: Integration matrices $N_{ijk}$ and $P_{ijkl}$ computed once
+- **Gradient dot products**: $\varphi_{ij} = \nabla L_i \cdot \nabla L_j$ stored in temporary matrices
+- **No quadrature**: Eliminates numerical integration overhead
+- **Exact results**: Machine precision accuracy without quadrature errors
 
-**Benchmark Results** (184 element mesh):
-- Time per element: ~6 ms
-- Processing rate: 164 elements/second
-- Matrix assembly: ~1.1 seconds total
+**Analytical Formulas**:
+- **Stiffness matrix**: Curl products using $\bar{v}$ vectors ($\nabla L_i \times \nabla L_j$)
+- **Mass matrix**: Dot products using $\varphi$ terms ($\nabla L_i \cdot \nabla L_j$)
+- **Integration matrices**: 
+  - $$N_{ijk} = \int L_i L_j L_k\, dV$$
+  - $$P_{ijkl} = \int L_i L_j L_k L_l\, dV$$
+
+**Performance Benefits**:
+- Eliminates quadrature point evaluation
+- Reduces computational complexity from O(n²) to O(1) per matrix element
+- Provides exact integration results
+- Maintains high accuracy for all element types
 
 See `OPTIMIZATION_SUMMARY.md` for detailed performance analysis.
 
@@ -257,5 +274,5 @@ For questions about the implementation or theoretical aspects, please refer to t
 
 ---
 
-**Note**: This solver is optimized for performance-critical applications in computational electromagnetics. The vectorized matrix assembly and efficient basis function evaluation make it suitable for large-scale cavity analysis.
+**Note**: This solver is optimized for performance-critical applications in computational electromagnetics. The analytical matrix assembly eliminates numerical integration overhead while providing exact results, making it ideal for large-scale cavity analysis with guaranteed accuracy.
 
