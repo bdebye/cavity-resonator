@@ -89,6 +89,7 @@ def generate_rectangular_cavity_mesh(lx, ly, lz, element_size):
 
 
 class mesh_info(object):
+
     def __init__(self, nodes, elems, boundary_faces):
         self.nodes = nodes
         self.elems = elems
@@ -105,9 +106,6 @@ class mesh_info(object):
     
     def tet_center(self, label):
         return self.nodes[self.elems[label, :], :].mean(axis=0)
-    
-    def tet_volume(self, label):
-        return np.linalg.det(self.nodes[self.elems[label, :], :]) / 6.0
 
     def _parse_face_and_edge(self):
         all_faces = []
@@ -172,7 +170,7 @@ class mesh_info(object):
         idx = bisect.bisect_left(self.v_table, key)
         if idx >= len(self.v_table) or self.v_table[idx] != key:
             raise ValueError("Node list {} not found in v_table".format(node_list))
-        
+
         return idx * 2 + type_id
 
 nodes, elems, boundary_faces = generate_rectangular_cavity_mesh(1.0, 0.5, 0.75, 0.3)
@@ -190,5 +188,3 @@ if __name__ == "__main__":
 
     print("Number of DOFs:", gl_mesh.DoF)
     print("Number of elements:", gl_mesh.number_of_elements())
-
-

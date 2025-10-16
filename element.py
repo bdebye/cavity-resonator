@@ -35,6 +35,7 @@ Z0 = 376.730313461  # ohms
 eta0 = 376.730313461  # ohms
 
 class element_tet(object):
+
     def __init__(self, label):
         self.node_list = sorted(gl_mesh.elems[label])
 
@@ -316,18 +317,16 @@ class element_tet(object):
             i1, i2, l_i = get_edge_info(i)
             for j in range(4):
                 j1, j2, j3 = get_face_info(j)
-                val = V * l_i / 4.0 * np.dot(v_bar[i1, i2], 
+                self.Ke[i, 12 + j] = V * l_i / 4.0 * np.dot(v_bar[i1, i2], 
                     (2 * v_bar[j2, j3] + v_bar[j1, j3] - v_bar[j1, j2]))
-                self.Ke[i, 12 + j] = val
         
         # E^{e2,f1} block: equation (30)
         for i in range(6):
             i1, i2, l_i = get_edge_info(i)
             for j in range(4):
                 j1, j2, j3 = get_face_info(j)
-                val = V * l_i / 4.0 * np.dot(v_bar[i2, i1], 
+                self.Ke[6 + i, 12 + j] = V * l_i / 4.0 * np.dot(v_bar[i2, i1], 
                     (2 * v_bar[j2, j3] + v_bar[j1, j3] - v_bar[j1, j2]))
-                self.Ke[6 + i, 12 + j] = val
         
         # E^{f1,e1} block: transpose of E^{e1,f1} (for symmetry)
         for i in range(4):
@@ -346,7 +345,7 @@ class element_tet(object):
                 j1, j2, j3 = get_face_info(j)
                 # curl(B_f1^i) = 2 L_i1 v̄_i2,i3 + L_i2 v̄_i1,i3 - L_i3 v̄_i1,i2
                 # Expand dot product and integrate term by term
-                val = V * (
+                self.Ke[12 + i, 12 + j] = V * (
                     4 * np.dot(v_bar[i2, i3], v_bar[j2, j3]) * M[i1, j1] +
                     2 * np.dot(v_bar[i2, i3], v_bar[j1, j3]) * M[i1, j2] -
                     2 * np.dot(v_bar[i2, i3], v_bar[j1, j2]) * M[i1, j3] +
@@ -357,25 +356,22 @@ class element_tet(object):
                         np.dot(v_bar[i1, i2], v_bar[j1, j3]) * M[i3, j2] +
                         np.dot(v_bar[i1, i2], v_bar[j1, j2]) * M[i3, j3]
                 )
-                self.Ke[12 + i, 12 + j] = val
         
         # E^{e1,f2} block: equation (32)
         for i in range(6):
             i1, i2, l_i = get_edge_info(i)
             for j in range(4):
                 j1, j2, j3 = get_face_info(j)
-                val = V * l_i / 4.0 * np.dot(v_bar[i1, i2],
+                self.Ke[i, 16 + j] = V * l_i / 4.0 * np.dot(v_bar[i1, i2],
                     (v_bar[j2, j3] + 2 * v_bar[j1, j3] + v_bar[j1, j2]))
-                self.Ke[i, 16 + j] = val
         
         # E^{e2,f2} block: equation (33)
         for i in range(6):
             i1, i2, l_i = get_edge_info(i)
             for j in range(4):
                 j1, j2, j3 = get_face_info(j)
-                val = V * l_i / 4.0 * np.dot(v_bar[i2, i1],
+                self.Ke[6 + i, 16 + j] = V * l_i / 4.0 * np.dot(v_bar[i2, i1],
                     (v_bar[j2, j3] + 2 * v_bar[j1, j3] + v_bar[j1, j2]))
-                self.Ke[6 + i, 16 + j] = val
         
         # E^{f2,e1} block: transpose (for symmetry)
         for i in range(4):
@@ -394,7 +390,7 @@ class element_tet(object):
                 j1, j2, j3 = get_face_info(j)
                 # curl(B_f1^i) = 2 L_i1 v̄_i2,i3 + L_i2 v̄_i1,i3 - L_i3 v̄_i1,i2
                 # curl(B_f2^j) = L_j1 v̄_j2,j3 + 2 L_j2 v̄_j1,j3 + L_j3 v̄_j1,j2
-                val = V * (
+                self.Ke[12 + i, 16 + j] = V * (
                     2 * np.dot(v_bar[i2, i3], v_bar[j2, j3]) * M[i1, j1] +
                     4 * np.dot(v_bar[i2, i3], v_bar[j1, j3]) * M[i1, j2] +
                     2 * np.dot(v_bar[i2, i3], v_bar[j1, j2]) * M[i1, j3] +
@@ -405,7 +401,6 @@ class element_tet(object):
                     2 * np.dot(v_bar[i1, i2], v_bar[j1, j3]) * M[i3, j2] -
                         np.dot(v_bar[i1, i2], v_bar[j1, j2]) * M[i3, j3]
                 )
-                self.Ke[12 + i, 16 + j] = val
         
         # E^{f2,f1} block: analytical integration
         for i in range(4):
@@ -414,7 +409,7 @@ class element_tet(object):
                 j1, j2, j3 = get_face_info(j)
                 # curl(B_f2^i) = L_i1 v̄_i2,i3 + 2 L_i2 v̄_i1,i3 + L_i3 v̄_i1,i2
                 # curl(B_f1^j) = 2 L_j1 v̄_j2,j3 + L_j2 v̄_j1,j3 - L_j3 v̄_j1,j2
-                val = V * (
+                self.Ke[16 + i, 12 + j] = V * (
                     2 * np.dot(v_bar[i2, i3], v_bar[j2, j3]) * M[i1, j1] +
                         np.dot(v_bar[i2, i3], v_bar[j1, j3]) * M[i1, j2] -
                         np.dot(v_bar[i2, i3], v_bar[j1, j2]) * M[i1, j3] +
@@ -425,7 +420,6 @@ class element_tet(object):
                         np.dot(v_bar[i1, i2], v_bar[j1, j3]) * M[i3, j2] -
                         np.dot(v_bar[i1, i2], v_bar[j1, j2]) * M[i3, j3]
                 )
-                self.Ke[16 + i, 12 + j] = val
         
         # E^{f2,f2} block: analytical integration
         for i in range(4):
@@ -434,7 +428,7 @@ class element_tet(object):
                 j1, j2, j3 = get_face_info(j)
                 # curl(B_f2^i) = L_i1 v̄_i2,i3 + 2 L_i2 v̄_i1,i3 + L_i3 v̄_i1,i2
                 # curl(B_f2^j) = L_j1 v̄_j2,j3 + 2 L_j2 v̄_j1,j3 + L_j3 v̄_j1,j2
-                val = V * (
+                self.Ke[16 + i, 16 + j] = V * (
                         np.dot(v_bar[i2, i3], v_bar[j2, j3]) * M[i1, j1] +
                     2 * np.dot(v_bar[i2, i3], v_bar[j1, j3]) * M[i1, j2] +
                         np.dot(v_bar[i2, i3], v_bar[j1, j2]) * M[i1, j3] +
@@ -445,7 +439,6 @@ class element_tet(object):
                     2 * np.dot(v_bar[i1, i2], v_bar[j1, j3]) * M[i3, j2] +
                         np.dot(v_bar[i1, i2], v_bar[j1, j2]) * M[i3, j3]
                 )
-                self.Ke[16 + i, 16 + j] = val
 
     def _compute_mass_matrix(self):
 
@@ -482,8 +475,7 @@ class element_tet(object):
             for j in range(6):
                 j1, j2, l_j = get_edge_info(j)
                 # F_ij^{e1e1} = V * l_i * l_j * φ_{i2,j2} * M_{i1,j1}
-                val = V * l_i * l_j * phi[i2, j2] * M[i1, j1]
-                self.Me[i, j] = val
+                self.Me[i, j] = V * l_i * l_j * phi[i2, j2] * M[i1, j1]
         
         # ===== F^{e1,e2} block: equation (37) =====
         for i in range(6):
@@ -491,8 +483,7 @@ class element_tet(object):
             for j in range(6):
                 j1, j2, l_j = get_edge_info(j)
                 # F_ij^{e1e2} = V * l_i * l_j * φ_{i2,j1} * M_{i1,j2}
-                val = V * l_i * l_j * phi[i2, j1] * M[i1, j2]
-                self.Me[i, 6 + j] = val
+                self.Me[i, 6 + j] = V * l_i * l_j * phi[i2, j1] * M[i1, j2]
         
         # ===== F^{e2,e1} block: equation (38) =====
         for i in range(6):
@@ -500,8 +491,7 @@ class element_tet(object):
             for j in range(6):
                 j1, j2, l_j = get_edge_info(j)
                 # F_ij^{e2e1} = V * l_i * l_j * φ_{i1,j2} * M_{i2,j1}
-                val = V * l_i * l_j * phi[i1, j2] * M[i2, j1]
-                self.Me[6 + i, j] = val
+                self.Me[6 + i, j] = V * l_i * l_j * phi[i1, j2] * M[i2, j1]
         
         # ===== F^{e2,e2} block: equation (39) =====
         for i in range(6):
@@ -509,8 +499,7 @@ class element_tet(object):
             for j in range(6):
                 j1, j2, l_j = get_edge_info(j)
                 # F_ij^{e2e2} = V * l_i * l_j * φ_{i1,j1} * M_{i2,j2}
-                val = V * l_i * l_j * phi[i1, j1] * M[i2, j2]
-                self.Me[6 + i, 6 + j] = val
+                self.Me[6 + i, 6 + j] = V * l_i * l_j * phi[i1, j1] * M[i2, j2]
         
         # ===== F^{e1,f1} block: equation (40) =====
         for i in range(6):
@@ -518,11 +507,10 @@ class element_tet(object):
             for j in range(4):
                 j1, j2, j3 = get_face_info(j)
                 # F_ij^{e1f1} = V * l_i * (φ_{i2,j3} * N_{i1,j1,j2} - φ_{i2,j2} * N_{i1,j1,j3})
-                val = V * l_i * (
+                self.Me[i, 12 + j] = V * l_i * (
                     phi[i2, j3] * N[i1, j1, j2] - 
                     phi[i2, j2] * N[i1, j1, j3]
                 )
-                self.Me[i, 12 + j] = val
         
         # ===== F^{e2,f1} block: equation (41) =====
         for i in range(6):
@@ -530,11 +518,10 @@ class element_tet(object):
             for j in range(4):
                 j1, j2, j3 = get_face_info(j)
                 # F_ij^{e2f1} = V * l_i * (φ_{i1,j3} * N_{i2,j1,j2} - φ_{i1,j2} * N_{i2,j1,j3})
-                val = V * l_i * (
+                self.Me[6 + i, 12 + j] = V * l_i * (
                     phi[i1, j3] * N[i2, j1, j2] - 
                     phi[i1, j2] * N[i2, j1, j3]
                 )
-                self.Me[6 + i, 12 + j] = val
         
         # ===== F^{f1,e1} block: transpose of F^{e1,f1} =====
         for i in range(4):
@@ -552,11 +539,10 @@ class element_tet(object):
             for j in range(4):
                 j1, j2, j3 = get_face_info(j)
                 # F_ij^{e1f2} = V * l_i * (φ_{i2,j3} * N_{i1,j1,j2} - φ_{i2,j1} * N_{i1,j2,j3})
-                val = V * l_i * (
+                self.Me[i, 16 + j] = V * l_i * (
                     phi[i2, j3] * N[i1, j1, j2] - 
                     phi[i2, j1] * N[i1, j2, j3]
                 )
-                self.Me[i, 16 + j] = val
         
         # ===== F^{e2,f2} block: equation (43) =====
         for i in range(6):
@@ -564,11 +550,10 @@ class element_tet(object):
             for j in range(4):
                 j1, j2, j3 = get_face_info(j)
                 # F_ij^{e2f2} = V * l_i * (φ_{i1,j3} * N_{i2,j1,j2} - φ_{i1,j1} * N_{i2,j2,j3})
-                val = V * l_i * (
+                self.Me[6 + i, 16 + j] = V * l_i * (
                     phi[i1, j3] * N[i2, j1, j2] - 
                     phi[i1, j1] * N[i2, j2, j3]
                 )
-                self.Me[6 + i, 16 + j] = val
         
         # ===== F^{f2,e1} block: transpose of F^{e1,f2} =====
         for i in range(4):
@@ -586,13 +571,12 @@ class element_tet(object):
             for j in range(4):
                 j1, j2, j3 = get_face_info(j)
                 # B_f1^i · B_f1^j with φ terms from ∇L·∇L products
-                val = V * (
+                self.Me[12 + i, 12 + j] = V * (
                     phi[i3, j3] * P[i1, i2, j1, j2] - 
                     phi[i3, j2] * P[i1, i2, j1, j3] - 
                     phi[i2, j3] * P[i1, i3, j1, j2] +
                     phi[i2, j2] * P[i1, i3, j1, j3]
                 )
-                self.Me[12 + i, 12 + j] = val
         
         # ===== F^{f1,f2} block: equation (45) =====
         for i in range(4):
@@ -600,13 +584,12 @@ class element_tet(object):
             for j in range(4):
                 j1, j2, j3 = get_face_info(j)
                 # B_f1^i · B_f2^j with φ terms
-                val = V * (
+                self.Me[12 + i, 16 + j] = V * (
                     phi[i3, j3] * P[i1, i2, j1, j2] - 
                     phi[i3, j1] * P[i1, i2, j2, j3] - 
                     phi[i2, j3] * P[i1, i3, j1, j2] +
                     phi[i2, j1] * P[i1, i3, j2, j3]
                 )
-                self.Me[12 + i, 16 + j] = val
         
         # ===== F^{f2,f1} block: transpose of F^{f1,f2} =====
         for i in range(4):
@@ -619,13 +602,12 @@ class element_tet(object):
             for j in range(4):
                 j1, j2, j3 = get_face_info(j)
                 # B_f2^i · B_f2^j with φ terms
-                val = V * (
+                self.Me[16 + i, 16 + j] = V * (
                     phi[i3, j3] * P[i1, i2, j1, j2] - 
                     phi[i3, j1] * P[i1, i2, j2, j3] - 
                     phi[i1, j3] * P[i2, i3, j1, j2] +
                     phi[i1, j1] * P[i2, i3, j2, j3]
                 )
-                self.Me[16 + i, 16 + j] = val
     
     def _compute_element_matrices_numerical(self):
         """
