@@ -674,10 +674,6 @@ class element_tet(object):
         self.Ke[:] = np.einsum('q,qij->ij', ref_weights, K_integrands) * self.volume
         self.Me[:] = np.einsum('q,qij->ij', ref_weights, M_integrands) * self.volume
     
-    def _assemble_element_matrices(self):
-        """Main assembly method - uses analytical formulas."""
-        self._assemble_element_matrices_analytical()
-    
     def interp_electric(self, weight, coord):
         e_field = np.zeros(3)
         for i in range(20):
