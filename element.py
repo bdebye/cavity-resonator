@@ -695,4 +695,3 @@ if __name__ == "__main__":
     num_matrix = element.Me.copy()
     print(np.abs(nan_matrix - num_matrix))
 
-    

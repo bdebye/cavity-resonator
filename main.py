@@ -46,8 +46,8 @@ class resonator(object):
         print("Assemble the global matrices.")
 
         # Initialize empty coordinate lists for sparse matrices
-        K_rows, K_cols, K_data = [], [], []
-        M_rows, M_cols, M_data = [], [], []
+        K_data, M_data = [], []
+        rows, cols = [], []
 
         for el in self.Nd_elem:
             K_elem = el.Ke
@@ -56,31 +56,27 @@ class resonator(object):
                 for j in range(20):
                     # The PEC entries are actually imposed in the following line.
                     if el.gl_pec_nonzero[i] and el.gl_pec_nonzero[j]:
-                        K_rows.append(el.gl_label[i])
-                        K_cols.append(el.gl_label[j])
+                        rows.append(el.gl_label[i])
+                        cols.append(el.gl_label[j])
+
                         K_data.append(K_elem[i, j])
-                        
-                        M_rows.append(el.gl_label[i])
-                        M_cols.append(el.gl_label[j])
                         M_data.append(M_elem[i, j])
 
         # Impose dirichlet boundary condition for PEC walls.
         for label in gl_mesh.pec_label:
-            K_rows.append(label)
-            K_cols.append(label)
-            K_data.append(1.0)
+            rows.append(label)
+            cols.append(label)
 
-            M_rows.append(label)
-            M_cols.append(label)
+            K_data.append(1.0)
             M_data.append(1.0)
         
         # Initialize sparse matrices directly in CSR format
-        self.K = scipy.sparse.csr_matrix((K_data, (K_rows, K_cols)), shape=(self.dof, self.dof))
-        self.M = scipy.sparse.csr_matrix((M_data, (M_rows, M_cols)), shape=(self.dof, self.dof))
+        self.K = scipy.sparse.csr_matrix((K_data, (rows, cols)), shape=(self.dof, self.dof))
+        self.M = scipy.sparse.csr_matrix((M_data, (rows, cols)), shape=(self.dof, self.dof))
 
     def solve_generaleigen(self):
         print("Solving general eigensystem...")
-        self.eigvals, self.eigvecs = scipy.sparse.linalg.eigs(self.K, k=50, M=self.M, which='LR', sigma=2.0, OPpart='r')
+        self.eigvals, self.eigvecs = scipy.sparse.linalg.eigsh(self.K, k=50, M=self.M, which='LA', sigma=2.0)
 
     def post_field(self, eigen_vals, eigen_vecs):
         from post_proc import gmsh_post
