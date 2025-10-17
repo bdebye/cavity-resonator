@@ -298,7 +298,7 @@ class element_tet(object):
             for j in range(6):
                 j1, j2, l_j = get_edge_info(j)
                 # curl(B_e1) = l_i v̄_{i1,i2}, curl(B_e2) = -l_j v̄_{j1,j2}
-                self.Ke[i, 6 + j] = -V * l_i * l_j * np.dot(v_bar[i1, i2], v_bar[j1, j2])
+                self.Ke[i, 6 + j] = -self.Ke[i, j]
         
         # E^{e2,e1} block: transpose of E^{e1,e2} (for symmetry)
         for i in range(6):
@@ -310,7 +310,7 @@ class element_tet(object):
             i1, i2, l_i = get_edge_info(i)
             for j in range(6):
                 j1, j2, l_j = get_edge_info(j)
-                self.Ke[6 + i, 6 + j] = V * l_i * l_j * np.dot(v_bar[i2, i1], v_bar[j2, j1])
+                self.Ke[6 + i, 6 + j] = self.Ke[i, j]
         
         # E^{e1,f1} block: equation (29)
         for i in range(6):
@@ -325,8 +325,7 @@ class element_tet(object):
             i1, i2, l_i = get_edge_info(i)
             for j in range(4):
                 j1, j2, j3 = get_face_info(j)
-                self.Ke[6 + i, 12 + j] = V * l_i / 4.0 * np.dot(v_bar[i2, i1], 
-                    (2 * v_bar[j2, j3] + v_bar[j1, j3] - v_bar[j1, j2]))
+                self.Ke[6 + i, 12 + j] = -self.Ke[i, 12 + j]
         
         # E^{f1,e1} block: transpose of E^{e1,f1} (for symmetry)
         for i in range(4):
@@ -370,8 +369,7 @@ class element_tet(object):
             i1, i2, l_i = get_edge_info(i)
             for j in range(4):
                 j1, j2, j3 = get_face_info(j)
-                self.Ke[6 + i, 16 + j] = V * l_i / 4.0 * np.dot(v_bar[i2, i1],
-                    (v_bar[j2, j3] + 2 * v_bar[j1, j3] + v_bar[j1, j2]))
+                self.Ke[6 + i, 16 + j] = -self.Ke[i, 16 + j]
         
         # E^{f2,e1} block: transpose (for symmetry)
         for i in range(4):
@@ -693,5 +691,5 @@ if __name__ == "__main__":
     nan_matrix = element.Me.copy()
     element._compute_element_matrices_numerical()
     num_matrix = element.Me.copy()
-    print(np.abs(nan_matrix - num_matrix))
+    print(np.abs(nan_matrix - num_matrix) < 1e-10)
 

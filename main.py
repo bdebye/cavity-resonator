@@ -109,7 +109,7 @@ if __name__ == "__main__":
     eigen_pairs = []
     for i in range(len(task.eigvals.real)):
         if task.eigvals[i].real > 1.0:
-            eigen_pairs.append((i, float(np.sqrt(float(task.eigvals[i].real)))))
+            eigen_pairs.append((i, float(np.sqrt(task.eigvals[i].real))))
 
     eigen_pairs.sort(key=lambda a: a[1])
     eigen_pairs = eigen_pairs[: 30]
