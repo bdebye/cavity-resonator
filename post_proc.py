@@ -34,6 +34,11 @@ class gmsh_post(object):
         template = "\tVP ( %f, %f, %f ){ %e, %e, %e };\n"
         self.file.write(template % (*coords, *v))
 
+    def add_text_label(self, coords, text):
+        assert self.view_open
+        template = "\tT3 ( %f, %f, %f, 0 ){ \"%s\" };\n"
+        self.file.write(template % (*coords, text))
+
     def close_vew(self):
         self.file.write("};\n")
         self.view_open = False

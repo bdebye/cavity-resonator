@@ -685,11 +685,116 @@ class element_tet(object):
         return -curl_e / (1j * k0 * c0 * mu0)
 
 
+def visualize_element(element, output_filename="nedelec_basis_fields.pos", num_samples=20):
+    """
+    Visualize all 20 Nedelec basis functions as vector fields using Gmsh postprocessing.
+    
+    Args:
+        element: element_tet instance
+        output_filename: Name of the output .pos file for Gmsh
+        num_samples: Number of samples per dimension for barycentric coordinates
+    """
+    import post_proc as pp
+    
+    # Get tetrahedron vertices
+    vertices = element.tet_vertices()  # Shape: (4, 3)
+    
+    # Generate sampling points within the tetrahedron using barycentric coordinates
+    # Barycentric coordinates: (u, v, w, t) where u+v+w+t=1, all >= 0
+    # We'll sample uniformly in barycentric space
+    sampling_coords = []
+    
+    # Generate points uniformly within the tetrahedron using barycentric coordinates
+    # Use a systematic approach: sample barycentric coordinates such that u+v+w+t=1
+    # We'll use a grid-based approach with proper normalization
+    
+    # Strategy: Generate points in a 3D grid of barycentric coordinates (u, v, w)
+    # and compute t = 1 - u - v - w, ensuring all are non-negative
+    # Generate systematic grid points
+    for i in range(num_samples):
+        u = i / max(1, num_samples - 1)
+        for j in range(num_samples):
+            v = j / max(1, num_samples - 1)
+            if u + v <= 1.0:
+                for k in range(num_samples):
+                    w = k / max(1, num_samples - 1)
+                    t = 1.0 - u - v - w
+                    if t >= 0.0:
+                        # Convert barycentric to physical coordinates
+                        coord = u * vertices[0] + v * vertices[1] + w * vertices[2] + t * vertices[3]
+                        sampling_coords.append(coord)
+    
+    # Add additional points for better visualization: edges, faces, and center
+    # Add points along edges
+    num_edge_samples = max(3, num_samples // 2)
+    for i in range(4):
+        for j in range(i+1, 4):
+            for alpha in np.linspace(0.0, 1.0, num_edge_samples):
+                coord = alpha * vertices[i] + (1 - alpha) * vertices[j]
+                sampling_coords.append(coord)
+    
+    # Add center point
+    sampling_coords.append(element.tet_center())
+    
+    # Add face centers
+    for face_idx in range(4):
+        face_nodes = element.face_node_triples[face_idx]
+        face_center = (vertices[face_nodes[0]] + vertices[face_nodes[1]] + 
+                      vertices[face_nodes[2]]) / 3.0
+        sampling_coords.append(face_center)
+        
+        # Add more points on each face
+        for alpha in np.linspace(0.0, 1.0, 3):
+            for beta in np.linspace(0.0, 1.0, 3):
+                if alpha + beta <= 1.0:
+                    gamma = 1.0 - alpha - beta
+                    face_coord = (alpha * vertices[face_nodes[0]] + 
+                                 beta * vertices[face_nodes[1]] + 
+                                 gamma * vertices[face_nodes[2]])
+                    sampling_coords.append(face_coord)
+    
+    sampling_coords = np.array(sampling_coords)
+    
+    # Create Gmsh post-processing file
+    post = pp.gmsh_post(output_filename)
+    
+    # Basis function names
+    basis_names = []
+    for i in range(6):
+        basis_names.append(f"Edge e1[{i}]")
+    for i in range(6):
+        basis_names.append(f"Edge e2[{i}]")
+    for i in range(4):
+        basis_names.append(f"Face f1[{i}]")
+    for i in range(4):
+        basis_names.append(f"Face f2[{i}]")
+    
+    # Get node labels for vertices
+    node_labels = element.node_list  # Sorted node indices
+    
+    # Evaluate and write each basis function
+    for basis_idx in range(20):
+        view_name = f"Basis {basis_idx}: {basis_names[basis_idx]}"
+        post.open_view(view_name)
+        
+        # Evaluate vector field at each sampling point
+        for coord in sampling_coords:
+            vector_field = element.B(basis_idx, coord)
+            post.add_vector_field(coord, vector_field)
+        
+        # Add text labels at vertices to tag the nodes
+        for i in range(4):
+            vertex_coord = vertices[i]
+            node_label = f"Vertex {i}"
+            post.add_text_label(vertex_coord, node_label)
+        
+        post.close_vew()
+    
+    post.close()
+    print(f"Visualization saved to {output_filename}")
+    print(f"Total sampling points: {len(sampling_coords)}")
+    print(f"Total basis functions visualized: 20")
+
 if __name__ == "__main__":
-    element = element_tet(0)
-    element._compute_mass_matrix()
-    nan_matrix = element.Me.copy()
-    element._compute_element_matrices_numerical()
-    num_matrix = element.Me.copy()
-    print(np.abs(nan_matrix - num_matrix) < 1e-10)
+    visualize_element(element_tet(0))
 
